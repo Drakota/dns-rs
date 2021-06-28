@@ -1,0 +1,24 @@
+{
+    "name": "dns-rs",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined"
+    ],
+    "settings": {
+        "lldb.executable": "/usr/bin/lldb",
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "files.watcherExclude": {
+            "**/target/**": true
+        }
+    },
+    "extensions": [
+        "matklad.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "bungcip.better-toml"
+    ],
+    "remoteUser": "code"
+}
