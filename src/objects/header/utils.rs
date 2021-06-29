@@ -1,5 +1,3 @@
-use std::{convert::TryFrom, fmt::Debug, num::TryFromIntError};
-
 use nom::{bits::complete::take, combinator::map_res, error::Error, IResult};
 
 pub type BitInput<'a> = (&'a [u8], usize);
@@ -16,21 +14,7 @@ where
     move |input: BitInput| map_res(take_bits(count), f)(input)
 }
 
-pub struct Bool {
-    value: bool,
-}
-
-impl Debug for Bool {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
-impl TryFrom<usize> for Bool {
-    type Error = TryFromIntError;
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        assert!(value <= 1, "Should be 0 or 1");
-        Ok(Self { value: value == 1 })
-    }
+pub fn convert_bit_to_bool(value: usize) -> Result<bool, ()> {
+    assert!(value <= 1, "Should be 0 or 1");
+    Ok(value == 1)
 }
