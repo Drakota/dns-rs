@@ -3,29 +3,39 @@ mod utils;
 
 use self::flags::DnsHeaderFlags;
 
-use nom::{bits::bits, error::context, number::complete::le_u16, IResult};
+use nom::{
+    bits::bits, combinator::map, error::context, number::complete::be_u16, sequence::tuple, IResult,
+};
 
 #[derive(Debug)]
 pub struct DnsHeader {
     pub transaction_id: u16,
     pub flags: DnsHeaderFlags,
-    // pub questions: u16,
-    // pub answers: u16,
-    // pub auth_rr: u16,
-    // pub add_rr: u16,
+    pub queries: u16,
+    pub responses: u16,
+    pub auth_rr: u16,
+    pub add_rr: u16,
 }
 
 impl DnsHeader {
     pub fn parse(i: &[u8]) -> IResult<&[u8], Self> {
-        let (i, transaction_id) = context("Transaction ID", le_u16)(i)?;
-        let (i, flags) = bits(DnsHeaderFlags::parse)(i)?;
-
-        Ok((
-            i,
-            Self {
+        map(
+            tuple((
+                context("Transaction ID", be_u16),
+                context("Flags", bits(DnsHeaderFlags::parse)),
+                context("Responses", be_u16),
+                context("Answers", be_u16),
+                context("Authority RRs", be_u16),
+                context("Additional RRs", be_u16),
+            )),
+            |(transaction_id, flags, queries, responses, auth_rr, add_rr)| Self {
                 transaction_id,
                 flags,
+                queries,
+                responses,
+                auth_rr,
+                add_rr,
             },
-        ))
+        )(i)
     }
 }

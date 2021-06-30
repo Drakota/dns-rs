@@ -1,6 +1,6 @@
 use super::header::DnsHeader;
 
-use nom::{combinator::map, sequence::tuple, IResult};
+use nom::error::context;
 
 #[derive(Debug)]
 pub struct DnsPacket {
@@ -8,7 +8,10 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
-    pub fn parse(i: &[u8]) -> IResult<&[u8], Self> {
-        map(tuple((DnsHeader::parse,)), |(header,)| Self { header })(i)
+    pub fn parse(i: &[u8]) -> Self {
+        let (i, header) =
+            context("Header", DnsHeader::parse)(i).expect("Error while parsing header");
+
+        Self { header }
     }
 }

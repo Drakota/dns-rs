@@ -6,13 +6,6 @@ use std::convert::TryFrom;
 
 #[derive(Debug, TryFromPrimitive)]
 #[repr(usize)]
-pub enum Message {
-    Query = 0x0,
-    Response = 0x1,
-}
-
-#[derive(Debug, TryFromPrimitive)]
-#[repr(usize)]
 pub enum Opcode {
     Query = 0x0,
     IQuery = 0x1,
@@ -34,7 +27,7 @@ pub enum ReplyCode {
 
 #[derive(Debug)]
 pub struct DnsHeaderFlags {
-    pub response: Message,
+    pub response: bool,
     pub opcode: Opcode,
     pub authoritative: bool,
     pub truncated: bool,
@@ -50,7 +43,7 @@ impl DnsHeaderFlags {
     pub fn parse(i: BitInput) -> BitResult<Self> {
         map(
             tuple((
-                context("Response", map_bits(1_usize, Message::try_from)),
+                context("Response", map_bits(1_usize, convert_bit_to_bool)),
                 context("Opcode", map_bits(4_usize, Opcode::try_from)),
                 context("Authoritative", map_bits(1_usize, convert_bit_to_bool)),
                 context("Truncated", map_bits(1_usize, convert_bit_to_bool)),

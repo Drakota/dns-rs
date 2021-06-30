@@ -2,12 +2,10 @@ mod objects;
 
 use objects::packet::*;
 
-use std::{error::Error, fs};
+use std::fs;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let input = fs::read("./examples/query.txt")?;
-    let packet = DnsPacket::parse(&input[..]).unwrap().1;
+fn main() {
+    let input = fs::read("./examples/queryy.txt").expect("Error while trying to read the file");
+    let packet = DnsPacket::parse(&input[..]);
     dbg!(packet);
-
-    Ok(())
 }
