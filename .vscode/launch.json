@@ -4,16 +4,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'dns-rs'",
+            "name": "Debug unit tests in library 'dns_rs'",
             "cargo": {
                 "args": [
-                    "build",
-                    "--bin=dns-rs",
+                    "test",
+                    "--no-run",
+                    "--lib",
                     "--package=dns-rs"
                 ],
                 "filter": {
-                    "name": "dns-rs",
-                    "kind": "bin"
+                    "name": "dns_rs",
+                    "kind": "lib"
                 }
             },
             "args": [],
@@ -22,17 +23,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'dns-rs'",
+            "name": "Debug integration test 'parser_tests'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=dns-rs",
+                    "--test=parser_tests",
                     "--package=dns-rs"
                 ],
                 "filter": {
-                    "name": "dns-rs",
-                    "kind": "bin"
+                    "name": "parser_tests",
+                    "kind": "test"
                 }
             },
             "args": [],

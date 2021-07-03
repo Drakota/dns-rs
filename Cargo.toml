@@ -6,3 +6,10 @@ edition = "2018"
 [dependencies]
 nom = "6.2.1"
 derive-try-from-primitive = "1.0.0"
+
+[lib]
+name = "dns_rs"
+path = "src/lib.rs"
+
+[features]
+testable_privates = []

@@ -1,13 +1,13 @@
-mod flags;
+pub mod flags;
 mod utils;
-
-use self::flags::DnsHeaderFlags;
 
 use nom::{
     bits::bits, combinator::map, error::context, number::complete::be_u16, sequence::tuple, IResult,
 };
 
-#[derive(Debug)]
+use self::flags::DnsHeaderFlags;
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct DnsHeader {
     pub transaction_id: u16,
     pub flags: DnsHeaderFlags,

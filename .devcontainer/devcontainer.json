@@ -1,5 +1,5 @@
 {
-    "name": "dns-rs",
+    "name": "dns_rs",
     "build": {
         "dockerfile": "Dockerfile"
     },
