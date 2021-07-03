@@ -1,18 +1,17 @@
-use std::convert::TryFrom;
+use super::name::*;
 
 use derive_try_from_primitive::*;
 use nom::{
-    bytes::complete::{tag, take},
     combinator::{map, map_res},
     error::context,
-    multi::many_till,
-    number::complete::{be_u16, be_u8},
+    number::complete::be_u16,
     sequence::tuple,
     IResult,
 };
+use std::convert::TryFrom;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, TryFromPrimitive)]
+#[derive(Debug, TryFromPrimitive, Clone)]
 #[repr(u16)]
 enum DnsQueryType {
     A = 0x1,
@@ -33,7 +32,7 @@ enum DnsQueryType {
     TXT = 0x10,
 }
 
-#[derive(Debug, TryFromPrimitive)]
+#[derive(Debug, TryFromPrimitive, Clone)]
 #[repr(u16)]
 enum DnsQueryClass {
     IN = 0x1,
@@ -42,7 +41,7 @@ enum DnsQueryClass {
     HS = 0x4,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DnsQuery {
     name: String,
     r#type: DnsQueryType,
@@ -50,24 +49,20 @@ pub struct DnsQuery {
 }
 
 impl DnsQuery {
-    fn parse_name(i: &'_ [u8]) -> IResult<&'_ [u8], String> {
-        let (i, size) = be_u8(i)?;
-        let (i, bytes) = take(size)(i)?;
-        Ok((i, String::from_utf8_lossy(bytes).into_owned()))
-    }
-
-    pub fn parse(i: &[u8]) -> IResult<&[u8], Self> {
-        map(
-            tuple((
-                context("Name", many_till(Self::parse_name, tag([0x0]))),
-                context("Type", map_res(be_u16, DnsQueryType::try_from)),
-                context("Class", map_res(be_u16, DnsQueryClass::try_from)),
-            )),
-            |((name, _), r#type, class)| Self {
-                name: name.join("."),
-                r#type,
-                class,
-            },
-        )(i)
+    pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Self> {
+        move |i: &[u8]| {
+            map(
+                tuple((
+                    context("Name", Name::parse(lookup_bytes)),
+                    context("Type", map_res(be_u16, DnsQueryType::try_from)),
+                    context("Class", map_res(be_u16, DnsQueryClass::try_from)),
+                )),
+                |(name, r#type, class)| Self {
+                    name,
+                    r#type,
+                    class,
+                },
+            )(i)
+        }
     }
 }
