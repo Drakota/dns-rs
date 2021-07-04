@@ -1,4 +1,3 @@
-mod address;
 mod name;
 pub mod query;
 pub mod response;
@@ -25,6 +24,7 @@ pub enum DnsRecordType {
     MINFO = 0x0E,
     MX = 0x0F,
     TXT = 0x10,
+    AAAA = 0x1C, // RFC 3596
 }
 
 #[derive(Debug, TryFromPrimitive, Clone, PartialEq, Eq)]
