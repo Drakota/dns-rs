@@ -1,16 +1,54 @@
+use std::{fmt::Debug, str::from_utf8};
+
 use nom::{bytes::complete::take, combinator::map, number::complete::be_u8, IResult};
 
 const COMPRESSION_MASK: u8 = 0xC0;
 
-#[derive(Debug)]
-pub struct DnsName {}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DnsLabel {
+    pub length: u8,
+    pub data: Vec<u8>,
+}
+
+impl DnsLabel {
+    pub fn new(data: &[u8]) -> Self {
+        Self {
+            length: data.len() as u8,
+            data: data.into(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct DnsName {
+    labels: Vec<DnsLabel>,
+}
+
+impl Debug for DnsName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name: Vec<&str> = self
+            .labels
+            .iter()
+            .map(|label| from_utf8(&label.data[..]).unwrap())
+            .collect();
+        write!(f, "{}", name.join("."))
+    }
+}
+
+impl From<&str> for DnsName {
+    fn from(s: &str) -> Self {
+        Self {
+            labels: s.split('.').map(|s| DnsLabel::new(s.as_bytes())).collect(),
+        }
+    }
+}
 
 impl DnsName {
     pub fn process_name<'a>(
         i: &'a [u8],
-        mut parts: Vec<String>,
+        mut parts: Vec<DnsLabel>,
         lookup_bytes: &'a [u8],
-    ) -> IResult<&'a [u8], Vec<String>> {
+    ) -> IResult<&'a [u8], Vec<DnsLabel>> {
         let (i, size) = be_u8(i)?;
         if size == 0x00 {
             return Ok((i, parts));
@@ -27,15 +65,15 @@ impl DnsName {
         }
 
         let (i, part) = take(size)(i)?;
-        parts.push(String::from_utf8_lossy(part).into_owned());
+        parts.push(DnsLabel::new(part));
         Self::process_name(i, parts, lookup_bytes)
     }
 
-    pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], String> {
+    pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Self> {
         move |i: &[u8]| {
             map(
                 |i| Self::process_name(i, Vec::new(), lookup_bytes),
-                |parts| parts.join("."),
+                |labels| Self { labels },
             )(i)
         }
     }

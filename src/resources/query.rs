@@ -12,7 +12,7 @@ use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsQuery {
-    pub name: String,
+    pub name: DnsName,
     pub r#type: DnsRecordType,
     pub class: DnsClass,
 }

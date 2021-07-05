@@ -1,4 +1,4 @@
-mod name;
+pub mod name;
 pub mod query;
 pub mod response;
 

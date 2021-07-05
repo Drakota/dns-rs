@@ -11,7 +11,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsResponse {
-    pub name: String,
+    pub name: DnsName,
     pub r#type: DnsRecordType,
     pub class: DnsClass,
     pub ttl: u32,

@@ -5,7 +5,7 @@ use dns_rs::{
     },
     packet::DnsPacket,
     resources::query::DnsQuery,
-    resources::DnsRecordType,
+    resources::{name::DnsName, DnsRecordType},
     resources::{response::DnsResponse, DnsClass},
 };
 
@@ -52,7 +52,7 @@ fn test_parse_ipv4_dns_query() {
             auth_rr: 0x00,
         },
         queries: vec![DnsQuery {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::A,
             class: DnsClass::IN,
         }],
@@ -103,7 +103,7 @@ pub fn test_parse_ipv6_dns_query() {
             auth_rr: 0x00,
         },
         queries: vec![DnsQuery {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
         }],
@@ -167,12 +167,12 @@ pub fn test_parse_ipv4_dns_response() {
             auth_rr: 0x00,
         },
         queries: vec![DnsQuery {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::A,
             class: DnsClass::IN,
         }],
         responses: vec![DnsResponse {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::A,
             class: DnsClass::IN,
             ttl: 128,
@@ -237,12 +237,12 @@ pub fn test_parse_ipv6_dns_response() {
             auth_rr: 0x00,
         },
         queries: vec![DnsQuery {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
         }],
         responses: vec![DnsResponse {
-            name: String::from("google.com"),
+            name: DnsName::from("google.com"),
             r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
             ttl: 30,
