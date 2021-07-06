@@ -1,4 +1,5 @@
 pub mod name;
+pub mod name_server;
 pub mod query;
 pub mod response;
 

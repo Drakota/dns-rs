@@ -1,4 +1,5 @@
 use super::header::DnsHeader;
+use super::resources::name_server::DnsNameServer;
 use super::resources::query::DnsQuery;
 use super::resources::response::DnsResponse;
 
@@ -10,6 +11,8 @@ pub struct DnsPacket {
     pub header: DnsHeader,
     pub queries: Vec<DnsQuery>,
     pub responses: Vec<DnsResponse>,
+    pub name_servers: Vec<DnsNameServer>,
+    pub additional_records: Vec<DnsResponse>,
 }
 
 impl DnsPacket {
@@ -31,7 +34,7 @@ impl DnsPacket {
         )(i)
         .expect("Error while parsing queries");
 
-        let (_, responses) = fold_many_m_n(
+        let (i, responses) = fold_many_m_n(
             0,
             header.responses as usize,
             DnsResponse::parse(&lookup_bytes),
@@ -43,10 +46,36 @@ impl DnsPacket {
         )(i)
         .expect("Error while parsing responses");
 
+        let (i, name_servers) = fold_many_m_n(
+            0,
+            header.auth_rr as usize,
+            DnsNameServer::parse(&lookup_bytes),
+            Vec::with_capacity(header.auth_rr as usize),
+            |mut name_servers, name_server| {
+                name_servers.push(name_server);
+                name_servers
+            },
+        )(i)
+        .expect("Error while parsing name servers");
+
+        let (_, additional_records) = fold_many_m_n(
+            0,
+            header.add_rr as usize,
+            DnsResponse::parse(&lookup_bytes),
+            Vec::with_capacity(header.add_rr as usize),
+            |mut additional_records, additional_record| {
+                additional_records.push(additional_record);
+                additional_records
+            },
+        )(i)
+        .expect("Error while parsing additional records");
+
         Self {
             header,
             queries,
             responses,
+            name_servers,
+            additional_records,
         }
     }
 }

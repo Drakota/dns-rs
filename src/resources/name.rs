@@ -46,12 +46,12 @@ impl From<&str> for DnsName {
 impl DnsName {
     pub fn process_name<'a>(
         i: &'a [u8],
-        mut parts: Vec<DnsLabel>,
+        mut labels: Vec<DnsLabel>,
         lookup_bytes: &'a [u8],
     ) -> IResult<&'a [u8], Vec<DnsLabel>> {
         let (i, size) = be_u8(i)?;
         if size == 0x00 {
-            return Ok((i, parts));
+            return Ok((i, labels));
         }
 
         // If the size has the two most significant bits set, it
@@ -60,13 +60,13 @@ impl DnsName {
         if (size & COMPRESSION_MASK) == COMPRESSION_MASK {
             let (i, offset) = be_u8(i)?;
             let (_, parts) =
-                Self::process_name(&lookup_bytes[(offset as usize)..], parts, lookup_bytes)?;
+                Self::process_name(&lookup_bytes[(offset as usize)..], labels, lookup_bytes)?;
             return Ok((i, parts));
         }
 
         let (i, part) = take(size)(i)?;
-        parts.push(DnsLabel::new(part));
-        Self::process_name(i, parts, lookup_bytes)
+        labels.push(DnsLabel::new(part));
+        Self::process_name(i, labels, lookup_bytes)
     }
 
     pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Self> {
@@ -76,5 +76,51 @@ impl DnsName {
                 |labels| Self { labels },
             )(i)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_name() {
+        let bytes = [
+            0x03, 0x77, 0x77, 0x77, // "www"
+            0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, // "local"
+            0x03, 0x63, 0x6f, 0x6d, // "com"
+            0x00, // Null terminated
+        ];
+
+        let (_, name) = DnsName::parse(&[])(&bytes).unwrap();
+
+        assert_eq!(name.labels.len(), 3);
+        assert_eq!(name.labels[0].data, vec![0x77, 0x77, 0x77]);
+        assert_eq!(name.labels[1].data, vec![0x6c, 0x6f, 0x63, 0x61, 0x6c]);
+        assert_eq!(name.labels[2].data, vec![0x63, 0x6f, 0x6d]);
+        assert_eq!(name, DnsName::from("www.local.com"));
+    }
+
+    #[test]
+    fn test_parse_compressed_name() {
+        let bytes = [
+            0x03, 0x77, 0x77, 0x77, // "www"
+            0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, // "local"
+            0x03, 0x63, 0x6f, 0x6d, // "com"
+            0x00, // Null terminated
+            0x09, 0x73, 0x75, 0x62, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e, // "subdomain"
+            0xC0, 0x04, // Compression jump to the fourth byte
+        ];
+
+        let (_, name) = DnsName::parse(&bytes)(&bytes[15..]).unwrap();
+
+        assert_eq!(name.labels.len(), 3);
+        assert_eq!(
+            name.labels[0].data,
+            vec![0x73, 0x75, 0x62, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e]
+        );
+        assert_eq!(name.labels[1].data, vec![0x6c, 0x6f, 0x63, 0x61, 0x6c]);
+        assert_eq!(name.labels[2].data, vec![0x63, 0x6f, 0x6d]);
+        assert_eq!(name, DnsName::from("subdomain.local.com"));
     }
 }
