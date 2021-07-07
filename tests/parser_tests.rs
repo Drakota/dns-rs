@@ -4,12 +4,15 @@ use dns_rs::{
         DnsHeader,
     },
     packet::DnsPacket,
+    resources::query::DnsQuery,
     resources::{name::DnsName, DnsRecordType},
-    resources::{name_server::DnsNameServer, query::DnsQuery},
-    resources::{response::DnsResponse, DnsClass},
+    resources::{record::DnsRecord, DnsClass},
 };
 
-use std::{net::IpAddr, str::FromStr};
+use std::{
+    net::{Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
 #[test]
 fn test_parse_ipv4_dns_query() {
@@ -51,13 +54,12 @@ fn test_parse_ipv4_dns_query() {
             add_rr: 0x00,
             auth_rr: 0x00,
         },
-        queries: vec![DnsQuery {
+        queries: vec![DnsQuery::A {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::A,
             class: DnsClass::IN,
         }],
         responses: vec![],
-        name_servers: vec![],
+        authorities: vec![],
         additional_records: vec![],
     };
 
@@ -104,13 +106,12 @@ pub fn test_parse_ipv6_dns_query() {
             add_rr: 0x00,
             auth_rr: 0x00,
         },
-        queries: vec![DnsQuery {
+        queries: vec![DnsQuery::AAAA {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
         }],
         responses: vec![],
-        name_servers: vec![],
+        authorities: vec![],
         additional_records: vec![],
     };
 
@@ -170,19 +171,17 @@ pub fn test_parse_ipv4_dns_response() {
             add_rr: 0x00,
             auth_rr: 0x00,
         },
-        queries: vec![DnsQuery {
+        queries: vec![DnsQuery::A {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::A,
             class: DnsClass::IN,
         }],
-        responses: vec![DnsResponse {
+        responses: vec![DnsRecord::A {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::A,
             class: DnsClass::IN,
             ttl: 128,
-            address: IpAddr::from_str("172.217.13.174").unwrap(),
+            address: Ipv4Addr::from_str("172.217.13.174").unwrap(),
         }],
-        name_servers: vec![],
+        authorities: vec![],
         additional_records: vec![],
     };
 
@@ -242,19 +241,17 @@ pub fn test_parse_ipv6_dns_response() {
             add_rr: 0x00,
             auth_rr: 0x00,
         },
-        queries: vec![DnsQuery {
+        queries: vec![DnsQuery::AAAA {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
         }],
-        responses: vec![DnsResponse {
+        responses: vec![DnsRecord::AAAA {
             name: DnsName::from("google.com"),
-            r#type: DnsRecordType::AAAA,
             class: DnsClass::IN,
             ttl: 30,
-            address: IpAddr::from_str("2607:F8B0:4020:805::200E").unwrap(),
+            address: Ipv6Addr::from_str("2607:F8B0:4020:805::200E").unwrap(),
         }],
-        name_servers: vec![],
+        authorities: vec![],
         additional_records: vec![],
     };
 
@@ -314,22 +311,19 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
             auth_rr: 0x0D,
             add_rr: 0x0E,
         },
-        queries: vec![DnsQuery {
+        queries: vec![DnsQuery::A {
             name: DnsName::from("a.root-servers.net"),
-            r#type: DnsRecordType::A,
             class: DnsClass::IN,
         }],
-        responses: vec![DnsResponse {
+        responses: vec![DnsRecord::A {
             name: DnsName::from("a.root-servers.net"),
-            r#type: DnsRecordType::A,
             class: DnsClass::IN,
             ttl: 0x306D2F,
-            address: IpAddr::from_str("198.41.0.4").unwrap(),
+            address: Ipv4Addr::from_str("198.41.0.4").unwrap(),
         }],
-        name_servers: (b'a'..=b'm')
-            .map(|c| DnsNameServer {
+        authorities: (b'a'..=b'm')
+            .map(|c| DnsRecord::NS {
                 name: DnsName::from("root-servers.net"),
-                r#type: DnsRecordType::NS,
                 class: DnsClass::IN,
                 ttl: 0x162E,
                 name_server: DnsName::from(
@@ -338,103 +332,89 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
             })
             .collect(),
         additional_records: vec![
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("b.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3173678,
-                address: IpAddr::from_str("199.9.14.201").unwrap(),
+                address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("c.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3348534,
-                address: IpAddr::from_str("192.33.4.12").unwrap(),
+                address: Ipv4Addr::from_str("192.33.4.12").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("d.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3512628,
-                address: IpAddr::from_str("199.7.91.13").unwrap(),
+                address: Ipv4Addr::from_str("199.7.91.13").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("e.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3512739,
-                address: IpAddr::from_str("192.203.230.10").unwrap(),
+                address: Ipv4Addr::from_str("192.203.230.10").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("f.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3515613,
-                address: IpAddr::from_str("192.5.5.241").unwrap(),
+                address: Ipv4Addr::from_str("192.5.5.241").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("g.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3526933,
-                address: IpAddr::from_str("192.112.36.4").unwrap(),
+                address: Ipv4Addr::from_str("192.112.36.4").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("h.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3513119,
-                address: IpAddr::from_str("198.97.190.53").unwrap(),
+                address: Ipv4Addr::from_str("198.97.190.53").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("i.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3512248,
-                address: IpAddr::from_str("192.36.148.17").unwrap(),
+                address: Ipv4Addr::from_str("192.36.148.17").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("j.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3574353,
-                address: IpAddr::from_str("192.58.128.30").unwrap(),
+                address: Ipv4Addr::from_str("192.58.128.30").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("k.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3574353,
-                address: IpAddr::from_str("193.0.14.129").unwrap(),
+                address: Ipv4Addr::from_str("193.0.14.129").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("l.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3591933,
-                address: IpAddr::from_str("199.7.83.42").unwrap(),
+                address: Ipv4Addr::from_str("199.7.83.42").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::A {
                 name: DnsName::from("m.root-servers.net"),
-                r#type: DnsRecordType::A,
                 class: DnsClass::IN,
                 ttl: 3510902,
-                address: IpAddr::from_str("202.12.27.33").unwrap(),
+                address: Ipv4Addr::from_str("202.12.27.33").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::AAAA {
                 name: DnsName::from("a.root-servers.net"),
-                r#type: DnsRecordType::AAAA,
                 class: DnsClass::IN,
                 ttl: 3513818,
-                address: IpAddr::from_str("2001:503:ba3e::2:30").unwrap(),
+                address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
             },
-            DnsResponse {
+            DnsRecord::AAAA {
                 name: DnsName::from("b.root-servers.net"),
-                r#type: DnsRecordType::AAAA,
                 class: DnsClass::IN,
                 ttl: 3556583,
-                address: IpAddr::from_str("2001:500:200::b").unwrap(),
+                address: Ipv6Addr::from_str("2001:500:200::b").unwrap(),
             },
         ],
     };

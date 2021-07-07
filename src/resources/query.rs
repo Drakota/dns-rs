@@ -11,10 +11,9 @@ use nom::{
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DnsQuery {
-    pub name: DnsName,
-    pub r#type: DnsRecordType,
-    pub class: DnsClass,
+pub enum DnsQuery {
+    A { name: DnsName, class: DnsClass },
+    AAAA { name: DnsName, class: DnsClass },
 }
 
 impl DnsQuery {
@@ -26,10 +25,10 @@ impl DnsQuery {
                     context("Type", map_res(be_u16, DnsRecordType::try_from)),
                     context("Class", map_res(be_u16, DnsClass::try_from)),
                 )),
-                |(name, r#type, class)| Self {
-                    name,
-                    r#type,
-                    class,
+                |(name, record_type, class)| match record_type {
+                    DnsRecordType::A => DnsQuery::A { name, class },
+                    DnsRecordType::AAAA => DnsQuery::AAAA { name, class },
+                    _ => todo!(),
                 },
             )(i)
         }

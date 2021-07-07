@@ -1,7 +1,6 @@
 use super::header::DnsHeader;
-use super::resources::name_server::DnsNameServer;
 use super::resources::query::DnsQuery;
-use super::resources::response::DnsResponse;
+use super::resources::record::DnsRecord;
 
 use nom::error::context;
 use nom::multi::fold_many_m_n;
@@ -10,9 +9,9 @@ use nom::multi::fold_many_m_n;
 pub struct DnsPacket {
     pub header: DnsHeader,
     pub queries: Vec<DnsQuery>,
-    pub responses: Vec<DnsResponse>,
-    pub name_servers: Vec<DnsNameServer>,
-    pub additional_records: Vec<DnsResponse>,
+    pub responses: Vec<DnsRecord>,
+    pub authorities: Vec<DnsRecord>,
+    pub additional_records: Vec<DnsRecord>,
 }
 
 impl DnsPacket {
@@ -37,7 +36,7 @@ impl DnsPacket {
         let (i, responses) = fold_many_m_n(
             0,
             header.responses as usize,
-            DnsResponse::parse(&lookup_bytes),
+            DnsRecord::parse(&lookup_bytes),
             Vec::with_capacity(header.responses as usize),
             |mut responses, response| {
                 responses.push(response);
@@ -46,22 +45,22 @@ impl DnsPacket {
         )(i)
         .expect("Error while parsing responses");
 
-        let (i, name_servers) = fold_many_m_n(
+        let (i, authorities) = fold_many_m_n(
             0,
             header.auth_rr as usize,
-            DnsNameServer::parse(&lookup_bytes),
+            DnsRecord::parse(&lookup_bytes),
             Vec::with_capacity(header.auth_rr as usize),
-            |mut name_servers, name_server| {
-                name_servers.push(name_server);
-                name_servers
+            |mut authorities, authority| {
+                authorities.push(authority);
+                authorities
             },
         )(i)
-        .expect("Error while parsing name servers");
+        .expect("Error while parsing authorities");
 
         let (_, additional_records) = fold_many_m_n(
             0,
             header.add_rr as usize,
-            DnsResponse::parse(&lookup_bytes),
+            DnsRecord::parse(&lookup_bytes),
             Vec::with_capacity(header.add_rr as usize),
             |mut additional_records, additional_record| {
                 additional_records.push(additional_record);
@@ -74,7 +73,7 @@ impl DnsPacket {
             header,
             queries,
             responses,
-            name_servers,
+            authorities,
             additional_records,
         }
     }

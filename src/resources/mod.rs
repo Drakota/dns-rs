@@ -1,7 +1,6 @@
 pub mod name;
-pub mod name_server;
 pub mod query;
-pub mod response;
+pub mod record;
 
 use derive_try_from_primitive::*;
 
