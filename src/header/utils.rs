@@ -1,7 +1,6 @@
-use nom::{bits::complete::take, combinator::map_res, error::Error, IResult};
+use crate::types::{BitInput, BitResult};
 
-pub type BitInput<'a> = (&'a [u8], usize);
-pub type BitResult<'a, T, E = Error<BitInput<'a>>> = IResult<BitInput<'a>, T, E>;
+use nom::{bits::complete::take, combinator::map_res};
 
 pub fn take_bits(count: usize) -> impl Fn(BitInput) -> BitResult<usize> {
     move |input: BitInput| take(count)(input)

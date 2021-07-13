@@ -1,9 +1,10 @@
 use super::header::DnsHeader;
 use super::resources::query::DnsQuery;
 use super::resources::record::DnsRecord;
+use crate::types::{Error as ParseError, ParseInput};
 
-use nom::error::context;
 use nom::multi::fold_many_m_n;
+use nom::{error::context, Err as NomErr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DnsPacket {
@@ -15,66 +16,59 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
-    pub fn parse(i: &[u8]) -> Self {
-        let lookup_bytes: Vec<u8> = i.iter().copied().collect();
+    pub fn parse(i: ParseInput) -> Result<Self, NomErr<ParseError<ParseInput>>> {
+        let (b, header) = context("Header", DnsHeader::parse)(i)?;
 
-        let (i, header) =
-            context("Header", DnsHeader::parse)(i).expect("Error while parsing header");
-
-        let (i, queries) = fold_many_m_n(
+        let (b, queries) = fold_many_m_n(
             0,
             header.queries as usize,
-            DnsQuery::parse(&lookup_bytes),
+            DnsQuery::parse(i),
             Vec::with_capacity(header.queries as usize),
             |mut queries, query| {
                 queries.push(query);
                 queries
             },
-        )(i)
-        .expect("Error while parsing queries");
+        )(b)?;
 
-        let (i, responses) = fold_many_m_n(
+        let (b, responses) = fold_many_m_n(
             0,
             header.responses as usize,
-            DnsRecord::parse(&lookup_bytes),
+            DnsRecord::parse(i),
             Vec::with_capacity(header.responses as usize),
             |mut responses, response| {
                 responses.push(response);
                 responses
             },
-        )(i)
-        .expect("Error while parsing responses");
+        )(b)?;
 
-        let (i, authorities) = fold_many_m_n(
+        let (b, authorities) = fold_many_m_n(
             0,
             header.auth_rr as usize,
-            DnsRecord::parse(&lookup_bytes),
+            DnsRecord::parse(i),
             Vec::with_capacity(header.auth_rr as usize),
             |mut authorities, authority| {
                 authorities.push(authority);
                 authorities
             },
-        )(i)
-        .expect("Error while parsing authorities");
+        )(b)?;
 
         let (_, additional_records) = fold_many_m_n(
             0,
             header.add_rr as usize,
-            DnsRecord::parse(&lookup_bytes),
+            DnsRecord::parse(i),
             Vec::with_capacity(header.add_rr as usize),
             |mut additional_records, additional_record| {
                 additional_records.push(additional_record);
                 additional_records
             },
-        )(i)
-        .expect("Error while parsing additional records");
+        )(b)?;
 
-        Self {
+        Ok(Self {
             header,
             queries,
             responses,
             authorities,
             additional_records,
-        }
+        })
     }
 }

@@ -1,21 +1,18 @@
-use std::{fmt::Debug, str::from_utf8};
+use crate::types::{ParseInput, ParseResult};
 
-use nom::{bytes::complete::take, combinator::map, number::complete::be_u8, IResult};
+use nom::{bytes::complete::take, combinator::map, number::complete::be_u8};
+use std::{fmt::Debug, str::from_utf8};
 
 const COMPRESSION_MASK: u8 = 0xC0;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsLabel {
-    pub length: u8,
     pub data: Vec<u8>,
 }
 
 impl DnsLabel {
-    pub fn new(data: &[u8]) -> Self {
-        Self {
-            length: data.len() as u8,
-            data: data.into(),
-        }
+    pub fn new(data: ParseInput) -> Self {
+        Self { data: data.into() }
     }
 }
 
@@ -45,34 +42,39 @@ impl From<&str> for DnsName {
 
 impl DnsName {
     pub fn process_name<'a>(
-        i: &'a [u8],
+        i: ParseInput<'a>,
+        reference_bytes: ParseInput<'a>,
         mut labels: Vec<DnsLabel>,
-        lookup_bytes: &'a [u8],
-    ) -> IResult<&'a [u8], Vec<DnsLabel>> {
+    ) -> ParseResult<'a, Vec<DnsLabel>> {
         let (i, size) = be_u8(i)?;
         if size == 0x00 {
             return Ok((i, labels));
         }
 
         // If the size has the two most significant bits set, it
-        // means that we need to jump to an offset in our lookup_bytes
+        // means that we need to jump to an offset in our reference_bytes
         // because of compression
         if (size & COMPRESSION_MASK) == COMPRESSION_MASK {
             let (i, offset) = be_u8(i)?;
-            let (_, parts) =
-                Self::process_name(&lookup_bytes[(offset as usize)..], labels, lookup_bytes)?;
+            let (_, parts) = Self::process_name(
+                &reference_bytes[(offset as usize)..],
+                reference_bytes,
+                labels,
+            )?;
             return Ok((i, parts));
         }
 
         let (i, part) = take(size)(i)?;
         labels.push(DnsLabel::new(part));
-        Self::process_name(i, labels, lookup_bytes)
+        Self::process_name(i, reference_bytes, labels)
     }
 
-    pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Self> {
-        move |i: &[u8]| {
+    pub fn parse<'a>(
+        reference_bytes: ParseInput<'a>,
+    ) -> impl FnMut(ParseInput<'a>) -> ParseResult<'a, Self> {
+        move |i: ParseInput<'a>| {
             map(
-                |i| Self::process_name(i, Vec::new(), lookup_bytes),
+                |i| Self::process_name(i, reference_bytes, Vec::new()),
                 |labels| Self { labels },
             )(i)
         }

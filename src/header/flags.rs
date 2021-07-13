@@ -1,4 +1,5 @@
 use super::utils::*;
+use crate::types::{BitInput, BitResult};
 
 use derive_try_from_primitive::*;
 use nom::{combinator::map, error::context, sequence::tuple};

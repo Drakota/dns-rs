@@ -1,11 +1,10 @@
 pub mod flags;
 mod utils;
 
-use nom::{
-    bits::bits, combinator::map, error::context, number::complete::be_u16, sequence::tuple, IResult,
-};
-
 use self::flags::DnsHeaderFlags;
+use crate::types::{ParseInput, ParseResult};
+
+use nom::{bits::bits, combinator::map, error::context, number::complete::be_u16, sequence::tuple};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DnsHeader {
@@ -18,7 +17,7 @@ pub struct DnsHeader {
 }
 
 impl DnsHeader {
-    pub fn parse(i: &[u8]) -> IResult<&[u8], Self> {
+    pub fn parse(i: ParseInput) -> ParseResult<Self> {
         map(
             tuple((
                 context("Transaction ID", be_u16),

@@ -1,11 +1,11 @@
 use super::{name::DnsName, DnsClass, DnsRecordType};
+use crate::types::{ParseInput, ParseResult};
 
 use nom::{
     bytes::complete::take,
     combinator::map_res,
     error::context,
     number::complete::{be_u16, be_u32},
-    IResult,
 };
 use std::{
     convert::{TryFrom, TryInto},
@@ -51,9 +51,11 @@ pub enum DnsRecord {
 }
 
 impl DnsRecord {
-    pub fn parse<'a>(lookup_bytes: &'a [u8]) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Self> {
-        move |i: &[u8]| {
-            let (i, name) = context("Name", DnsName::parse(lookup_bytes))(i)?;
+    pub fn parse<'a>(
+        reference_bytes: ParseInput<'a>,
+    ) -> impl FnMut(ParseInput<'a>) -> ParseResult<'a, Self> {
+        move |i: ParseInput<'a>| {
+            let (i, name) = context("Name", DnsName::parse(reference_bytes))(i)?;
             let (i, record_type) = context("Type", map_res(be_u16, DnsRecordType::try_from))(i)?;
             let (i, class) = context("Class", map_res(be_u16, DnsClass::try_from))(i)?;
             let (i, ttl) = context("Time to live", be_u32)(i)?;
@@ -77,7 +79,7 @@ impl DnsRecord {
                 }
                 DnsRecordType::NS => {
                     let (i, bytes) = context("Name server", take(len))(i)?;
-                    let (_, name_server) = DnsName::parse(lookup_bytes)(bytes)?;
+                    let (_, name_server) = DnsName::parse(reference_bytes)(bytes)?;
 
                     Ok((
                         i,
@@ -104,7 +106,7 @@ impl DnsRecord {
                         },
                     ))
                 }
-                _ => todo!(),
+                _ => unreachable!(),
             }
         }
     }

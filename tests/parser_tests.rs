@@ -4,8 +4,8 @@ use dns_rs::{
         DnsHeader,
     },
     packet::DnsPacket,
+    resources::name::DnsName,
     resources::query::DnsQuery,
-    resources::{name::DnsName, DnsRecordType},
     resources::{record::DnsRecord, DnsClass},
 };
 
@@ -63,7 +63,7 @@ fn test_parse_ipv4_dns_query() {
         additional_records: vec![],
     };
 
-    assert_eq!(expect, DnsPacket::parse(&bytes[..]))
+    assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap())
 }
 
 #[test]
@@ -115,7 +115,7 @@ pub fn test_parse_ipv6_dns_query() {
         additional_records: vec![],
     };
 
-    assert_eq!(expect, DnsPacket::parse(&bytes[..]));
+    assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
 
 #[test]
@@ -185,7 +185,7 @@ pub fn test_parse_ipv4_dns_response() {
         additional_records: vec![],
     };
 
-    assert_eq!(expect, DnsPacket::parse(&bytes[..]));
+    assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
 
 #[test]
@@ -255,7 +255,7 @@ pub fn test_parse_ipv6_dns_response() {
         additional_records: vec![],
     };
 
-    assert_eq!(expect, DnsPacket::parse(&bytes[..]));
+    assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
 
 #[test]
@@ -419,5 +419,5 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
         ],
     };
 
-    assert_eq!(expect, DnsPacket::parse(&bytes[..]));
+    assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
