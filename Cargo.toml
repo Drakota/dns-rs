@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-nom = "6.2.1"
+cookie-factory = "0.3.2"
 derive-try-from-primitive = "1.0.0"
+nom = "6.2.1"
 
 [lib]
 name = "dns_rs"
