@@ -1,11 +1,12 @@
 use super::utils::*;
 use crate::types::{BitInput, BitResult};
 
+use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
 use derive_try_from_primitive::*;
 use nom::{combinator::map, error::context, sequence::tuple};
-use std::convert::TryFrom;
+use std::{convert::TryFrom, io::Write};
 
-#[derive(Debug, TryFromPrimitive, PartialEq, Eq)]
+#[derive(Debug, TryFromPrimitive, PartialEq, Eq, Clone, Copy)]
 #[repr(usize)]
 pub enum Opcode {
     // https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
@@ -19,7 +20,7 @@ pub enum Opcode {
     // 6 - 15 reserved for future use
 }
 
-#[derive(Debug, TryFromPrimitive, PartialEq, Eq)]
+#[derive(Debug, TryFromPrimitive, PartialEq, Eq, Clone, Copy)]
 #[repr(usize)]
 pub enum ReplyCode {
     NoError = 0x00,
@@ -103,5 +104,67 @@ impl DnsHeaderFlags {
                 rcode,
             },
         )(i)
+    }
+
+    pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
+        use cf::combinator::slice;
+
+        move |out| {
+            slice(vec![
+                (self.recdesired as u8)
+                    | ((self.truncated as u8) << 1)
+                    | ((self.authoritative as u8) << 2)
+                    | ((self.opcode as u8) << 3)
+                    | ((self.response as u8) << 7) as u8,
+                (self.rcode as u8)
+                    | ((self.checkdisable as u8) << 4)
+                    | ((self.authenticated as u8) << 5)
+                    | ((self.z as u8) << 6)
+                    | ((self.recavail as u8) << 7),
+            ])(out)
+        }
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
+        gen_simple(self.serialize(), Vec::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialize() {
+        let flags = DnsHeaderFlags {
+            response: true,
+            opcode: Opcode::Query,
+            authoritative: false,
+            truncated: false,
+            recdesired: true,
+            recavail: true,
+            z: false,
+            authenticated: false,
+            checkdisable: false,
+            rcode: ReplyCode::NoError,
+        };
+
+        assert_eq!(flags.to_bytes().unwrap(), vec![0x81, 0x80]);
+
+        // 0010 1101 1001 0010
+        let flags = DnsHeaderFlags {
+            response: false,
+            opcode: Opcode::Update,
+            authoritative: true,
+            truncated: false,
+            recdesired: true,
+            recavail: true,
+            z: false,
+            authenticated: false,
+            checkdisable: true,
+            rcode: ReplyCode::ServerFailure,
+        };
+
+        assert_eq!(flags.to_bytes().unwrap(), vec![0x2D, 0x92]);
     }
 }

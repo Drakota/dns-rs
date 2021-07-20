@@ -42,11 +42,12 @@ impl DnsHeader {
         )(i)
     }
 
-    pub fn serialize<W: Write>(&self) -> impl SerializeFn<W> {
+    pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
         use cf::{bytes::be_u16, sequence::tuple};
 
         tuple((
             be_u16(self.transaction_id),
+            self.flags.serialize(),
             be_u16(self.queries),
             be_u16(self.responses),
             be_u16(self.auth_rr),
@@ -67,7 +68,10 @@ mod tests {
     fn test_serialize() {
         let header = DnsHeader {
             transaction_id: 0x1234,
-            flags: DnsHeaderFlags::default(),
+            flags: DnsHeaderFlags {
+                recdesired: true,
+                ..Default::default()
+            },
             queries: 0x5678,
             responses: 0x9abc,
             auth_rr: 0xdef0,
@@ -77,6 +81,7 @@ mod tests {
         #[rustfmt::skip]
         assert_eq!(header.to_bytes().unwrap(), vec![
             0x12, 0x34, // Transaction ID
+            0x01, 0x00, // Flags
             0x56, 0x78, // Queries
             0x9A, 0xBC, // Responses
             0xDE, 0xF0, // Auth RRs
