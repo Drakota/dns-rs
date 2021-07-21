@@ -5,7 +5,7 @@ pub mod record;
 use derive_try_from_primitive::*;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, TryFromPrimitive, Clone, PartialEq, Eq)]
+#[derive(Debug, TryFromPrimitive, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 pub enum DnsRecordType {
     A = 0x01,
@@ -27,7 +27,7 @@ pub enum DnsRecordType {
     AAAA = 0x1C, // RFC 3596
 }
 
-#[derive(Debug, TryFromPrimitive, Clone, PartialEq, Eq)]
+#[derive(Debug, TryFromPrimitive, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 pub enum DnsClass {
     IN = 0x01,

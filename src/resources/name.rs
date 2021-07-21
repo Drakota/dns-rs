@@ -1,6 +1,8 @@
 use crate::types::{ParseInput, ParseResult};
 
+use cookie_factory::{gen_simple, GenError, SerializeFn};
 use nom::{bytes::complete::take, combinator::map, number::complete::be_u8};
+use std::io::Write;
 use std::{fmt::Debug, str::from_utf8};
 
 const COMPRESSION_MASK: u8 = 0xC0;
@@ -78,6 +80,14 @@ impl DnsName {
                 |labels| Self { labels },
             )(i)
         }
+    }
+
+    pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
+        |_out| todo!()
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
+        gen_simple(self.serialize(), Vec::new())
     }
 }
 
