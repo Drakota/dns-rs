@@ -77,20 +77,6 @@ impl DnsRecord {
                         },
                     ))
                 }
-                DnsRecordType::NS => {
-                    let (i, bytes) = context("Name server", take(len))(i)?;
-                    let (_, name_server) = DnsName::parse(reference_bytes)(bytes)?;
-
-                    Ok((
-                        i,
-                        Self::NS {
-                            name,
-                            class,
-                            ttl,
-                            name_server,
-                        },
-                    ))
-                }
                 DnsRecordType::AAAA => {
                     let (i, bytes) = context("Address", take(len))(i)?;
                     let bytes: [u8; 16] = bytes.try_into().unwrap();

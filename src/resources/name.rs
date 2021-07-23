@@ -1,6 +1,6 @@
 use crate::types::{ParseInput, ParseResult};
 
-use cookie_factory::{gen_simple, GenError, SerializeFn};
+use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
 use nom::{bytes::complete::take, combinator::map, number::complete::be_u8};
 use std::io::Write;
 use std::{fmt::Debug, str::from_utf8};
@@ -83,7 +83,24 @@ impl DnsName {
     }
 
     pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
-        |_out| todo!()
+        use cf::combinator::slice;
+
+        move |out| {
+            let mut serialized_labels: Vec<u8> = self
+                .labels
+                .iter()
+                .map(|label| {
+                    // TODO: Implement label compression
+                    let mut vec = vec![label.data.len() as u8];
+                    vec.extend_from_slice(&label.data[..]);
+                    vec
+                })
+                .flatten()
+                .collect();
+            serialized_labels.push(0x00);
+
+            slice(serialized_labels)(out)
+        }
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
@@ -134,5 +151,20 @@ mod tests {
         assert_eq!(name.labels[1].data, vec![0x6c, 0x6f, 0x63, 0x61, 0x6c]);
         assert_eq!(name.labels[2].data, vec![0x63, 0x6f, 0x6d]);
         assert_eq!(name, DnsName::from("subdomain.local.com"));
+    }
+
+    #[test]
+    fn test_serialize() {
+        let name = DnsName::from("www.local.com");
+
+        assert_eq!(
+            name.to_bytes().unwrap(),
+            vec![
+                0x03, 0x77, 0x77, 0x77, // "www"
+                0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, // "local"
+                0x03, 0x63, 0x6f, 0x6d, // "com"
+                0x00, // Null terminated
+            ]
+        );
     }
 }

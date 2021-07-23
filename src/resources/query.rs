@@ -40,16 +40,25 @@ impl DnsQuery {
 
     pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
         use cf::{bytes::be_u16, sequence::tuple};
-        let (name, r#type, class) = match self {
-            DnsQuery::A { name, class } => (name, DnsRecordType::A, class),
-            DnsQuery::AAAA { name, class } => (name, DnsRecordType::AAAA, class),
-        };
 
-        tuple((
-            name.serialize(),
-            be_u16(r#type as u16),
-            be_u16(*class as u16),
-        ))
+        match self {
+            DnsQuery::A {
+                ref name,
+                ref class,
+            } => tuple((
+                name.serialize(),
+                be_u16(DnsRecordType::A as u16),
+                be_u16(*class as u16),
+            )),
+            DnsQuery::AAAA {
+                ref name,
+                ref class,
+            } => tuple((
+                name.serialize(),
+                be_u16(DnsRecordType::AAAA as u16),
+                be_u16(*class as u16),
+            )),
+        }
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
