@@ -3,6 +3,7 @@ use super::resources::query::DnsQuery;
 use super::resources::record::DnsRecord;
 use crate::types::{Error as ParseError, ParseInput};
 
+use cookie_factory::{self as cf, gen_simple, GenError};
 use nom::multi::fold_many_m_n;
 use nom::{error::context, Err as NomErr};
 
@@ -70,5 +71,47 @@ impl DnsPacket {
             authorities,
             additional_records,
         })
+    }
+
+    pub fn serialize(&self) -> Result<Vec<u8>, GenError> {
+        use cf::{combinator::slice, sequence::tuple};
+
+        let bytes = tuple((
+            self.header.serialize(),
+            slice(
+                self.queries
+                    .iter()
+                    // TODO: Don't use unwrap here and handle the error.
+                    .map(|q| q.to_bytes().unwrap())
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+            ),
+            slice(
+                self.responses
+                    .iter()
+                    // TODO: Don't use unwrap here and handle the error.
+                    .map(|r| r.to_bytes().unwrap())
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+            ),
+            slice(
+                self.authorities
+                    .iter()
+                    // TODO: Don't use unwrap here and handle the error.
+                    .map(|a| a.to_bytes().unwrap())
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+            ),
+            slice(
+                self.additional_records
+                    .iter()
+                    // TODO: Don't use unwrap here and handle the error.
+                    .map(|ar| ar.to_bytes().unwrap())
+                    .flatten()
+                    .collect::<Vec<u8>>(),
+            ),
+        ));
+
+        gen_simple(bytes, Vec::new())
     }
 }

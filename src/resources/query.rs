@@ -1,6 +1,7 @@
 use super::name::*;
 use super::*;
 use crate::types::{ParseInput, ParseResult};
+
 use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
 use std::io::Write;
 
@@ -32,7 +33,7 @@ impl DnsQuery {
                 |(name, record_type, class)| match record_type {
                     DnsRecordType::A => DnsQuery::A { name, class },
                     DnsRecordType::AAAA => DnsQuery::AAAA { name, class },
-                    _ => unreachable!(),
+                    _ => unimplemented!(),
                 },
             )(i)
         }

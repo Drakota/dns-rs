@@ -421,3 +421,88 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
+
+#[test]
+fn test_serialize() {
+    let packet = DnsPacket {
+        header: DnsHeader {
+            transaction_id: 0x244B,
+            flags: DnsHeaderFlags {
+                response: true,
+                recdesired: true,
+                recavail: true,
+                ..Default::default()
+            },
+            queries: 0x02,
+            responses: 0x02,
+            auth_rr: 0x00,
+            add_rr: 0x00,
+        },
+        queries: vec![
+            DnsQuery::A {
+                name: DnsName::from("a.root-servers.net"),
+                class: DnsClass::IN,
+            },
+            DnsQuery::AAAA {
+                name: DnsName::from("a.root-servers.net"),
+                class: DnsClass::IN,
+            },
+        ],
+        responses: vec![
+            DnsRecord::A {
+                name: DnsName::from("a.root-servers.net"),
+                class: DnsClass::IN,
+                ttl: 0x162E,
+                address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
+            },
+            DnsRecord::AAAA {
+                name: DnsName::from("a.root-servers.net"),
+                class: DnsClass::IN,
+                ttl: 0x1234,
+                address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
+            },
+        ],
+        authorities: vec![],
+        additional_records: vec![],
+    };
+
+    #[rustfmt::skip]
+    let expect: Vec<u8> = vec![
+        0x24, 0x4B, // Transaction ID
+        0x81, 0x80, // Flags
+        0x00, 0x02, // Queries count: 2
+        0x00, 0x02, // Responses count: 2
+        0x00, 0x00, // Authority RRs: 0
+        0x00, 0x00, // Additional RRs: 0
+        0x01, 0x61, // a
+        0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6e, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x01, // Record Type: A
+        0x00, 0x01, // Class: IN
+        0x01, 0x61, // a
+        0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6E, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x1C, // Record Type: AAAA
+        0x00, 0x01, // Class: IN
+        0x01, 0x61, // a
+        0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6e, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x01, // Record Type: A
+        0x00, 0x01, // Class: IN
+        0x00, 0x00, 0x16, 0x2E, // TTL: 0x162E
+        0xC7, 0x09, 0x0E, 0xC9, // Address: 199.9.14.201
+        0x01, 0x61, // a
+        0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6E, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x1C, // Record Type: AAAA
+        0x00, 0x01, // Class: IN
+        0x00, 0x00, 0x12, 0x34, // TTL: 0x1234
+        0x20, 0x01, 0x05, 0x03, 0xBA, 0x3E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x30 // Address: 2001:503:ba3e::2:30
+    ];
+
+    assert_eq!(expect, packet.serialize().unwrap());
+}

@@ -1,6 +1,9 @@
 use super::{name::DnsName, DnsClass, DnsRecordType};
 use crate::types::{ParseInput, ParseResult};
 
+use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
+use std::io::Write;
+
 use nom::{
     bytes::complete::take,
     combinator::map_res,
@@ -92,8 +95,62 @@ impl DnsRecord {
                         },
                     ))
                 }
-                _ => unreachable!(),
+                DnsRecordType::NS => {
+                    let (i, name_server) =
+                        context("Name Server", DnsName::parse(reference_bytes))(i)?;
+
+                    Ok((
+                        i,
+                        Self::NS {
+                            name,
+                            class,
+                            ttl,
+                            name_server,
+                        },
+                    ))
+                }
+                _ => unimplemented!(),
             }
         }
+    }
+
+    pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
+        use cf::{
+            bytes::{be_u16, be_u32},
+            combinator::slice,
+            sequence::tuple,
+        };
+
+        match self {
+            DnsRecord::A {
+                ref name,
+                ref class,
+                ref ttl,
+                ref address,
+            } => tuple((
+                name.serialize(),
+                be_u16(DnsRecordType::A as u16),
+                be_u16(*class as u16),
+                be_u32(*ttl),
+                slice(address.octets().to_vec()),
+            )),
+            DnsRecord::AAAA {
+                ref name,
+                ref class,
+                ref ttl,
+                ref address,
+            } => tuple((
+                name.serialize(),
+                be_u16(DnsRecordType::AAAA as u16),
+                be_u16(*class as u16),
+                be_u32(*ttl),
+                slice(address.octets().to_vec()),
+            )),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
+        gen_simple(self.serialize(), Vec::new())
     }
 }
