@@ -16,6 +16,8 @@ use std::convert::TryFrom;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DnsQuery {
     A { name: DnsName, class: DnsClass },
+    NS { name: DnsName, class: DnsClass },
+    CNAME { name: DnsName, class: DnsClass },
     AAAA { name: DnsName, class: DnsClass },
 }
 
@@ -32,6 +34,8 @@ impl DnsQuery {
                 )),
                 |(name, record_type, class)| match record_type {
                     DnsRecordType::A => DnsQuery::A { name, class },
+                    DnsRecordType::NS => DnsQuery::NS { name, class },
+                    DnsRecordType::CNAME => DnsQuery::CNAME { name, class },
                     DnsRecordType::AAAA => DnsQuery::AAAA { name, class },
                     _ => unimplemented!(),
                 },
@@ -40,22 +44,38 @@ impl DnsQuery {
     }
 
     pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
-        use cf::{bytes::be_u16, sequence::tuple};
+        use cf::{bytes::be_u16, combinator::slice, sequence::tuple};
 
         match self {
             DnsQuery::A {
                 ref name,
                 ref class,
             } => tuple((
-                name.serialize(),
+                slice(name.to_bytes().unwrap()),
                 be_u16(DnsRecordType::A as u16),
+                be_u16(*class as u16),
+            )),
+            DnsQuery::NS {
+                ref name,
+                ref class,
+            } => tuple((
+                slice(name.to_bytes().unwrap()),
+                be_u16(DnsRecordType::NS as u16),
+                be_u16(*class as u16),
+            )),
+            DnsQuery::CNAME {
+                ref name,
+                ref class,
+            } => tuple((
+                slice(name.to_bytes().unwrap()),
+                be_u16(DnsRecordType::CNAME as u16),
                 be_u16(*class as u16),
             )),
             DnsQuery::AAAA {
                 ref name,
                 ref class,
             } => tuple((
-                name.serialize(),
+                slice(name.to_bytes().unwrap()),
                 be_u16(DnsRecordType::AAAA as u16),
                 be_u16(*class as u16),
             )),

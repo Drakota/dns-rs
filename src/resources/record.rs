@@ -29,6 +29,12 @@ pub enum DnsRecord {
         ttl: u32,
         name_server: DnsName,
     },
+    CNAME {
+        name: DnsName,
+        class: DnsClass,
+        ttl: u32,
+        canonical_name: DnsName,
+    },
     // RFC 3596
     AAAA {
         name: DnsName,
@@ -36,21 +42,6 @@ pub enum DnsRecord {
         ttl: u32,
         address: Ipv6Addr,
     },
-    // To implement
-    // MD = 0x03,
-    // MF = 0x04,
-    // CNAME = 0x05,
-    // SOA = 0x06,
-    // MB = 0x07,
-    // MG = 0x08,
-    // MR = 0x09,
-    // NULL = 0x0A,
-    // WKS = 0x0B,
-    // PTR = 0x0C,
-    // HINFO = 0x0D,
-    // MINFO = 0x0E,
-    // MX = 0x0F,
-    // TXT = 0x10,
 }
 
 impl DnsRecord {
@@ -80,6 +71,34 @@ impl DnsRecord {
                         },
                     ))
                 }
+                DnsRecordType::NS => {
+                    let (i, name_server) =
+                        context("Name Server", DnsName::parse(reference_bytes))(i)?;
+
+                    Ok((
+                        i,
+                        Self::NS {
+                            name,
+                            class,
+                            ttl,
+                            name_server,
+                        },
+                    ))
+                }
+                DnsRecordType::CNAME => {
+                    let (i, canonical_name) =
+                        context("Canonical Name", DnsName::parse(reference_bytes))(i)?;
+
+                    Ok((
+                        i,
+                        Self::CNAME {
+                            name,
+                            class,
+                            ttl,
+                            canonical_name,
+                        },
+                    ))
+                }
                 DnsRecordType::AAAA => {
                     let (i, bytes) = context("Address", take(len))(i)?;
                     let bytes: [u8; 16] = bytes.try_into().unwrap();
@@ -92,20 +111,6 @@ impl DnsRecord {
                             class,
                             ttl,
                             address,
-                        },
-                    ))
-                }
-                DnsRecordType::NS => {
-                    let (i, name_server) =
-                        context("Name Server", DnsName::parse(reference_bytes))(i)?;
-
-                    Ok((
-                        i,
-                        Self::NS {
-                            name,
-                            class,
-                            ttl,
-                            name_server,
                         },
                     ))
                 }
@@ -128,11 +133,35 @@ impl DnsRecord {
                 ref ttl,
                 ref address,
             } => tuple((
-                name.serialize(),
+                slice(name.to_bytes().unwrap()),
                 be_u16(DnsRecordType::A as u16),
                 be_u16(*class as u16),
                 be_u32(*ttl),
                 slice(address.octets().to_vec()),
+            )),
+            DnsRecord::NS {
+                ref name,
+                ref class,
+                ref ttl,
+                ref name_server,
+            } => tuple((
+                slice(name.to_bytes().unwrap()),
+                be_u16(DnsRecordType::NS as u16),
+                be_u16(*class as u16),
+                be_u32(*ttl),
+                slice(name_server.to_bytes().unwrap()),
+            )),
+            DnsRecord::CNAME {
+                ref name,
+                ref class,
+                ref ttl,
+                ref canonical_name,
+            } => tuple((
+                slice(name.to_bytes().unwrap()),
+                be_u16(DnsRecordType::NS as u16),
+                be_u16(*class as u16),
+                be_u32(*ttl),
+                slice(canonical_name.to_bytes().unwrap()),
             )),
             DnsRecord::AAAA {
                 ref name,
@@ -140,13 +169,12 @@ impl DnsRecord {
                 ref ttl,
                 ref address,
             } => tuple((
-                name.serialize(),
+                slice(name.to_bytes().unwrap()),
                 be_u16(DnsRecordType::AAAA as u16),
                 be_u16(*class as u16),
                 be_u32(*ttl),
                 slice(address.octets().to_vec()),
             )),
-            _ => unimplemented!(),
         }
     }
 

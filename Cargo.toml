@@ -11,6 +11,3 @@ nom = "6.2.1"
 [lib]
 name = "dns_rs"
 path = "src/lib.rs"
-
-[features]
-testable_privates = []
