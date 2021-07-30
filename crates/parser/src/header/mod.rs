@@ -6,7 +6,7 @@ use crate::types::{ParseInput, ParseResult};
 use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
 use std::io::Write;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsHeader {
     pub transaction_id: u16,
     pub flags: DnsHeaderFlags,

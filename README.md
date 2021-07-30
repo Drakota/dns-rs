@@ -8,4 +8,5 @@ dns-rs is a small (and incomplete) DNS server and protocol parser made from scra
 |Crate|Description|
 |-|-|
 |parser|DNS protocol parser library, used by the other crates|
+|proxy|Proxy server which forwards queries to another caching server|
 |server|Caching server holding DNS records implementing recursive lookups|

@@ -6,7 +6,7 @@ use derive_try_from_primitive::*;
 use nom::{combinator::map, error::context, sequence::tuple};
 use std::{convert::TryFrom, io::Write};
 
-#[derive(Debug, TryFromPrimitive, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive, PartialEq, Eq)]
 #[repr(usize)]
 pub enum Opcode {
     // https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
@@ -31,7 +31,7 @@ pub enum ReplyCode {
     Refused = 0x05,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsHeaderFlags {
     pub response: bool,
     pub opcode: Opcode,

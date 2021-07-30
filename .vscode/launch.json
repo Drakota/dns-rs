@@ -4,16 +4,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'dns_rs'",
+            "name": "Debug unit tests in library 'parser'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=dns-rs"
+                    "--package=parser"
                 ],
                 "filter": {
-                    "name": "dns_rs",
+                    "name": "parser",
                     "kind": "lib"
                 }
             },
@@ -23,17 +23,54 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug integration test 'parser_tests'",
+            "name": "Debug integration test 'parser'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--test=parser_tests",
-                    "--package=dns-rs"
+                    "--test=parser",
+                    "--package=parser"
                 ],
                 "filter": {
-                    "name": "parser_tests",
+                    "name": "parser",
                     "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'proxy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=proxy",
+                    "--package=proxy"
+                ],
+                "filter": {
+                    "name": "proxy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'proxy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=proxy",
+                    "--package=proxy"
+                ],
+                "filter": {
+                    "name": "proxy",
+                    "kind": "bin"
                 }
             },
             "args": [],
