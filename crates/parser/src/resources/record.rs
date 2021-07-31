@@ -137,6 +137,7 @@ impl DnsRecord {
                 be_u16(DnsRecordType::A as u16),
                 be_u16(*class as u16),
                 be_u32(*ttl),
+                be_u16(address.octets().len() as u16),
                 slice(address.octets().to_vec()),
             )),
             DnsRecord::NS {
@@ -144,25 +145,35 @@ impl DnsRecord {
                 ref class,
                 ref ttl,
                 ref name_server,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::NS as u16),
-                be_u16(*class as u16),
-                be_u32(*ttl),
-                slice(name_server.to_bytes().unwrap()),
-            )),
+            } => {
+                let name_bytes = name.to_bytes().unwrap();
+
+                tuple((
+                    slice(name.to_bytes().unwrap()),
+                    be_u16(DnsRecordType::NS as u16),
+                    be_u16(*class as u16),
+                    be_u32(*ttl),
+                    be_u16(name_bytes.len() as u16),
+                    slice(name_server.to_bytes().unwrap()),
+                ))
+            }
             DnsRecord::CNAME {
                 ref name,
                 ref class,
                 ref ttl,
                 ref canonical_name,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::NS as u16),
-                be_u16(*class as u16),
-                be_u32(*ttl),
-                slice(canonical_name.to_bytes().unwrap()),
-            )),
+            } => {
+                let name_bytes = name.to_bytes().unwrap();
+
+                tuple((
+                    slice(name.to_bytes().unwrap()),
+                    be_u16(DnsRecordType::NS as u16),
+                    be_u16(*class as u16),
+                    be_u32(*ttl),
+                    be_u16(name_bytes.len() as u16),
+                    slice(canonical_name.to_bytes().unwrap()),
+                ))
+            }
             DnsRecord::AAAA {
                 ref name,
                 ref class,
@@ -173,6 +184,7 @@ impl DnsRecord {
                 be_u16(DnsRecordType::AAAA as u16),
                 be_u16(*class as u16),
                 be_u32(*ttl),
+                be_u16(address.octets().len() as u16),
                 slice(address.octets().to_vec()),
             )),
         }

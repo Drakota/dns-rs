@@ -9,7 +9,7 @@ use std::io::Write;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsHeader {
     pub transaction_id: u16,
-    pub flags: DnsHeaderFlags,
+    flags: DnsHeaderFlags,
     pub queries: u16,
     pub responses: u16,
     pub auth_rr: u16,
@@ -17,6 +17,17 @@ pub struct DnsHeader {
 }
 
 impl DnsHeader {
+    pub fn new() -> Self {
+        Self {
+            transaction_id: 1337,
+            flags: DnsHeaderFlags::default(),
+            queries: 0,
+            responses: 0,
+            auth_rr: 0,
+            add_rr: 0,
+        }
+    }
+
     pub fn parse(i: ParseInput) -> ParseResult<Self> {
         use nom::{
             bits::bits, combinator::map, error::context, number::complete::be_u16, sequence::tuple,
@@ -57,6 +68,16 @@ impl DnsHeader {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
         gen_simple(self.serialize(), Vec::new())
+    }
+
+    pub fn set_flags(&mut self, flags: DnsHeaderFlags) {
+        self.flags = flags;
+    }
+}
+
+impl Default for DnsHeader {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

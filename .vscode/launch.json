@@ -54,7 +54,11 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "--pa",
+                "1.1.1.1",
+                "-v"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {

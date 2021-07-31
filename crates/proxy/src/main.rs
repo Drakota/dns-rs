@@ -2,90 +2,86 @@ mod cli;
 
 use clap::Clap;
 use cli::Opts;
-use parser::{
-    header::{flags::DnsHeaderFlags, DnsHeader},
-    packet::DnsPacket,
-    resources::query::DnsQuery,
-};
-use std::{error::Error, net::UdpSocket};
+use parser::{header::flags::DnsHeaderFlags, packet::DnsPacket, resources::query::DnsQuery};
+use std::{io::Result, net::UdpSocket};
 
-fn forward_query(opts: &Opts, query: &DnsQuery) -> Result<DnsPacket, Box<dyn Error>> {
+fn forward_query(opts: &Opts, query: &DnsQuery) -> Result<DnsPacket> {
     // 0 as the port means that the OS will pick a port for us
     let socket = UdpSocket::bind(("0.0.0.0", 0))?;
 
-    let packet = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 6666,
-            flags: DnsHeaderFlags {
-                ..Default::default()
-            },
-            queries: 1,
-            responses: 0,
-            add_rr: 0,
-            auth_rr: 0,
-        },
-        queries: vec![query.clone()],
-        responses: vec![],
-        additional_records: vec![],
-        authorities: vec![],
+    let mut packet = DnsPacket::new();
+    packet.add_query(query.to_owned());
+
+    let bytes = match packet.serialize() {
+        Ok(b) => b,
+        Err(_e) => todo!(),
     };
 
-    socket.send_to(
-        &(packet.serialize()?)[..],
-        (opts.proxy_address, opts.proxy_port),
-    )?;
+    socket.send_to(&bytes[..], (opts.proxy_address, opts.proxy_port))?;
 
     let mut buffer = [0; 512];
     let (size, _) = socket.recv_from(&mut buffer)?;
 
-    let res = DnsPacket::parse(&buffer[..size])?;
-    Ok(res)
+    match DnsPacket::parse(&buffer[..size]) {
+        Ok(packet) => Ok(packet),
+        Err(_e) => todo!(),
+    }
 }
 
-fn handle_request(opts: &Opts, socket: &UdpSocket) -> Result<(), Box<dyn Error>> {
-    let mut buffer = [0; 512];
-
-    let (size, src) = socket.recv_from(&mut buffer)?;
-    if opts.verbose {
-        println!("{} bytes received from {}", size, src);
-    }
-
-    let request = DnsPacket::parse(&buffer[..size])?;
-    if opts.verbose {
-        println!("Received DNS request:\n{:?}", &request);
-    }
-
-    let mut response = request;
-    response.header.flags.response = true;
-    response.header.flags.recdesired = true;
-    response.header.flags.recavail = true;
-
-    for query in &response.queries {
-        if let Ok(res) = forward_query(opts, query) {
-            response.responses.extend(res.responses.iter().cloned());
-            response
-                .additional_records
-                .extend(res.additional_records.iter().cloned());
-            response.authorities.extend(res.authorities.iter().cloned());
-            response.header.responses += res.responses.len() as u16;
-        }
-    }
-
-    socket.send_to(&(response.serialize()?)[..], src)?;
-    if opts.verbose {
-        println!("Sent DNS response:\n{:?}", &response);
-    }
-
-    Ok(())
-}
-
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let opts = Opts::parse();
     let socket = UdpSocket::bind(("0.0.0.0", opts.port))?;
+    println!(
+        "Server listening on port {} and proxing requests to {}",
+        opts.port, opts.proxy_address
+    );
 
     loop {
-        if let Err(e) = handle_request(&opts, &socket) {
-            println!("Error while handling DNS request: {:?}", e)
+        let mut buffer = [0; 512];
+
+        let (size, src) = socket.recv_from(&mut buffer)?;
+        if opts.verbose {
+            println!("{} bytes received from {}", size, src);
+        }
+
+        let request = match DnsPacket::parse(&buffer[..size]) {
+            Ok(packet) => packet,
+            Err(e) => {
+                println!("Error parsing packet: {:?}", e);
+                continue;
+            }
+        };
+        if opts.verbose {
+            println!("Received DNS request:\n{:?}", &request);
+        }
+
+        let mut response = request.clone();
+        response.header.set_flags(DnsHeaderFlags {
+            response: true,
+            recdesired: true,
+            recavail: true,
+            ..Default::default()
+        });
+
+        for query in request.queries() {
+            if let Ok(res) = forward_query(&opts, query) {
+                response.add_responses(res.responses().to_owned());
+                response.add_records(res.additional_records().to_owned());
+                response.add_authorities(res.authorities().to_owned());
+            }
+        }
+
+        let bytes = match response.serialize() {
+            Ok(data) => data,
+            Err(e) => {
+                println!("Error serializing packet: {}", e);
+                continue;
+            }
+        };
+
+        socket.send_to(&bytes[..], src)?;
+        if opts.verbose {
+            println!("Sent DNS response:\n{:?}", &response);
         }
     }
 }

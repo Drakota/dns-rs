@@ -10,13 +10,23 @@ use nom::multi::fold_many_m_n;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsPacket {
     pub header: DnsHeader,
-    pub queries: Vec<DnsQuery>,
-    pub responses: Vec<DnsRecord>,
-    pub authorities: Vec<DnsRecord>,
-    pub additional_records: Vec<DnsRecord>,
+    queries: Vec<DnsQuery>,
+    responses: Vec<DnsRecord>,
+    authorities: Vec<DnsRecord>,
+    additional_records: Vec<DnsRecord>,
 }
 
 impl DnsPacket {
+    pub fn new() -> Self {
+        Self {
+            header: DnsHeader::new(),
+            queries: Vec::new(),
+            responses: Vec::new(),
+            authorities: Vec::new(),
+            additional_records: Vec::new(),
+        }
+    }
+
     pub fn parse(i: ParseInput) -> Result<Self, ParseError<Vec<u8>>> {
         let (b, header) = context("Header", DnsHeader::parse)(i)?;
 
@@ -113,5 +123,72 @@ impl DnsPacket {
         ));
 
         gen_simple(bytes, Vec::new())
+    }
+
+    pub fn header(&self) -> &DnsHeader {
+        &self.header
+    }
+
+    // IMPROVEMENT: Could make a macro for this.
+    pub fn queries(&self) -> &Vec<DnsQuery> {
+        &self.queries
+    }
+
+    pub fn add_query(&mut self, query: DnsQuery) {
+        self.header.queries += 1;
+        self.queries.push(query);
+    }
+
+    pub fn add_queries(&mut self, queries: Vec<DnsQuery>) {
+        self.header.queries += queries.len() as u16;
+        self.queries.extend(queries.iter().cloned());
+    }
+
+    pub fn responses(&self) -> &Vec<DnsRecord> {
+        &self.responses
+    }
+
+    pub fn add_response(&mut self, response: DnsRecord) {
+        self.header.responses += 1;
+        self.responses.push(response);
+    }
+
+    pub fn add_responses(&mut self, responses: Vec<DnsRecord>) {
+        self.header.responses += responses.len() as u16;
+        self.responses.extend(responses.iter().cloned());
+    }
+
+    pub fn authorities(&self) -> &Vec<DnsRecord> {
+        &self.authorities
+    }
+
+    pub fn add_authority(&mut self, authority: DnsRecord) {
+        self.header.auth_rr += 1;
+        self.authorities.push(authority);
+    }
+
+    pub fn add_authorities(&mut self, authorities: Vec<DnsRecord>) {
+        self.header.auth_rr += authorities.len() as u16;
+        self.authorities.extend(authorities.iter().cloned());
+    }
+
+    pub fn additional_records(&self) -> &Vec<DnsRecord> {
+        &self.additional_records
+    }
+
+    pub fn add_record(&mut self, record: DnsRecord) {
+        self.header.add_rr += 1;
+        self.additional_records.push(record);
+    }
+
+    pub fn add_records(&mut self, records: Vec<DnsRecord>) {
+        self.header.add_rr += records.len() as u16;
+        self.additional_records.extend(records.iter().cloned());
+    }
+}
+
+impl Default for DnsPacket {
+    fn default() -> Self {
+        Self::new()
     }
 }

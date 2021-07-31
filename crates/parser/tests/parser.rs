@@ -1,6 +1,5 @@
 use parser::{
     header::flags::*,
-    header::*,
     packet::*,
     resources::{name::*, query::*, record::*, DnsClass},
 };
@@ -33,31 +32,21 @@ fn test_parse_ipv4_dns_query() {
             0x00, 0x01, // Class: IN
         ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0xD0AE,
-            flags: DnsHeaderFlags {
-                response: false,
-                opcode: Opcode::Query,
-                truncated: false,
-                recdesired: true,
-                z: false,
-                authenticated: false,
-                ..Default::default()
-            },
-            queries: 0x01,
-            responses: 0x00,
-            add_rr: 0x00,
-            auth_rr: 0x00,
-        },
-        queries: vec![DnsQuery::A {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-        }],
-        responses: vec![],
-        authorities: vec![],
-        additional_records: vec![],
-    };
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0xD0AE;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: false,
+        opcode: Opcode::Query,
+        truncated: false,
+        recdesired: true,
+        z: false,
+        authenticated: false,
+        ..Default::default()
+    });
+    expect.add_query(DnsQuery::A {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+    });
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap())
 }
@@ -85,31 +74,21 @@ pub fn test_parse_ipv6_dns_query() {
             0x00, 0x01, // Class: IN
         ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0x6209,
-            flags: DnsHeaderFlags {
-                response: false,
-                opcode: Opcode::Query,
-                truncated: false,
-                recdesired: true,
-                z: false,
-                authenticated: false,
-                ..Default::default()
-            },
-            queries: 0x01,
-            responses: 0x00,
-            add_rr: 0x00,
-            auth_rr: 0x00,
-        },
-        queries: vec![DnsQuery::AAAA {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-        }],
-        responses: vec![],
-        authorities: vec![],
-        additional_records: vec![],
-    };
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0x6209;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: false,
+        opcode: Opcode::Query,
+        truncated: false,
+        recdesired: true,
+        z: false,
+        authenticated: false,
+        ..Default::default()
+    });
+    expect.add_query(DnsQuery::AAAA {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+    });
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
@@ -147,39 +126,30 @@ pub fn test_parse_ipv4_dns_response() {
             0xAC, 0xD9, 0x0D, 0xAE, // Address: 172.217.13.174
         ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0xD0AE,
-            flags: DnsHeaderFlags {
-                response: true,
-                opcode: Opcode::Query,
-                authoritative: false,
-                truncated: false,
-                recdesired: true,
-                recavail: true,
-                z: false,
-                authenticated: false,
-                checkdisable: false,
-                rcode: ReplyCode::NoError,
-            },
-            queries: 0x01,
-            responses: 0x01,
-            add_rr: 0x00,
-            auth_rr: 0x00,
-        },
-        queries: vec![DnsQuery::A {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-        }],
-        responses: vec![DnsRecord::A {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-            ttl: 128,
-            address: Ipv4Addr::from_str("172.217.13.174").unwrap(),
-        }],
-        authorities: vec![],
-        additional_records: vec![],
-    };
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0xD0AE;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: true,
+        opcode: Opcode::Query,
+        authoritative: false,
+        truncated: false,
+        recdesired: true,
+        recavail: true,
+        z: false,
+        authenticated: false,
+        checkdisable: false,
+        rcode: ReplyCode::NoError,
+    });
+    expect.add_query(DnsQuery::A {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+    });
+    expect.add_response(DnsRecord::A {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+        ttl: 128,
+        address: Ipv4Addr::from_str("172.217.13.174").unwrap(),
+    });
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
@@ -217,39 +187,30 @@ pub fn test_parse_ipv6_dns_response() {
             0x26, 0x07, 0xF8, 0xB0, 0x40, 0x20, 0x08, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x0E, // Address: 2607:F8B0:4020:805::200E
         ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0x6209,
-            flags: DnsHeaderFlags {
-                response: true,
-                opcode: Opcode::Query,
-                authoritative: false,
-                truncated: false,
-                recdesired: true,
-                recavail: true,
-                z: false,
-                authenticated: false,
-                checkdisable: false,
-                rcode: ReplyCode::NoError,
-            },
-            queries: 0x01,
-            responses: 0x01,
-            add_rr: 0x00,
-            auth_rr: 0x00,
-        },
-        queries: vec![DnsQuery::AAAA {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-        }],
-        responses: vec![DnsRecord::AAAA {
-            name: DnsName::from("google.com"),
-            class: DnsClass::IN,
-            ttl: 30,
-            address: Ipv6Addr::from_str("2607:F8B0:4020:805::200E").unwrap(),
-        }],
-        authorities: vec![],
-        additional_records: vec![],
-    };
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0x6209;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: true,
+        opcode: Opcode::Query,
+        authoritative: false,
+        truncated: false,
+        recdesired: true,
+        recavail: true,
+        z: false,
+        authenticated: false,
+        checkdisable: false,
+        rcode: ReplyCode::NoError,
+    });
+    expect.add_query(DnsQuery::AAAA {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+    });
+    expect.add_response(DnsRecord::AAAA {
+        name: DnsName::from("google.com"),
+        class: DnsClass::IN,
+        ttl: 30,
+        address: Ipv6Addr::from_str("2607:F8B0:4020:805::200E").unwrap(),
+    });
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
@@ -286,41 +247,32 @@ pub fn test_parse_dns_response_with_cname() {
         0xac, 0xd9, 0x0d, 0x73, // Address: 172.217.13.115
     ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0x8223,
-            flags: DnsHeaderFlags {
-                response: true,
-                recdesired: true,
-                recavail: true,
-                ..Default::default()
-            },
-            queries: 0x01,
-            responses: 0x02,
-            add_rr: 0x00,
-            auth_rr: 0x00,
-        },
-        queries: vec![DnsQuery::A {
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0x8223;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: true,
+        recdesired: true,
+        recavail: true,
+        ..Default::default()
+    });
+    expect.add_query(DnsQuery::A {
+        name: DnsName::from("docs.sbonds.org"),
+        class: DnsClass::IN,
+    });
+    expect.add_responses(vec![
+        DnsRecord::CNAME {
             name: DnsName::from("docs.sbonds.org"),
             class: DnsClass::IN,
-        }],
-        responses: vec![
-            DnsRecord::CNAME {
-                name: DnsName::from("docs.sbonds.org"),
-                class: DnsClass::IN,
-                ttl: 0x1C0F,
-                canonical_name: DnsName::from("ghs.google.com"),
-            },
-            DnsRecord::A {
-                name: DnsName::from("ghs.google.com"),
-                class: DnsClass::IN,
-                ttl: 0x79,
-                address: Ipv4Addr::from_str("172.217.13.115").unwrap(),
-            },
-        ],
-        additional_records: vec![],
-        authorities: vec![],
-    };
+            ttl: 0x1C0F,
+            canonical_name: DnsName::from("ghs.google.com"),
+        },
+        DnsRecord::A {
+            name: DnsName::from("ghs.google.com"),
+            class: DnsClass::IN,
+            ttl: 0x79,
+            address: Ipv4Addr::from_str("172.217.13.115").unwrap(),
+        },
+    ]);
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
@@ -364,31 +316,26 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b,
     ];
 
-    let expect = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0x244B,
-            flags: DnsHeaderFlags {
-                response: true,
-                recdesired: true,
-                recavail: true,
-                ..Default::default()
-            },
-            queries: 0x01,
-            responses: 0x01,
-            auth_rr: 0x0D,
-            add_rr: 0x0E,
-        },
-        queries: vec![DnsQuery::A {
-            name: DnsName::from("a.root-servers.net"),
-            class: DnsClass::IN,
-        }],
-        responses: vec![DnsRecord::A {
-            name: DnsName::from("a.root-servers.net"),
-            class: DnsClass::IN,
-            ttl: 0x306D2F,
-            address: Ipv4Addr::from_str("198.41.0.4").unwrap(),
-        }],
-        authorities: (b'a'..=b'm')
+    let mut expect = DnsPacket::new();
+    expect.header.transaction_id = 0x244B;
+    expect.header.set_flags(DnsHeaderFlags {
+        response: true,
+        recdesired: true,
+        recavail: true,
+        ..Default::default()
+    });
+    expect.add_query(DnsQuery::A {
+        name: DnsName::from("a.root-servers.net"),
+        class: DnsClass::IN,
+    });
+    expect.add_response(DnsRecord::A {
+        name: DnsName::from("a.root-servers.net"),
+        class: DnsClass::IN,
+        ttl: 0x306D2F,
+        address: Ipv4Addr::from_str("198.41.0.4").unwrap(),
+    });
+    expect.add_authorities(
+        (b'a'..=b'm')
             .map(|c| DnsRecord::NS {
                 name: DnsName::from("root-servers.net"),
                 class: DnsClass::IN,
@@ -398,178 +345,171 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
                 ),
             })
             .collect(),
-        additional_records: vec![
-            DnsRecord::A {
-                name: DnsName::from("b.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3173678,
-                address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("c.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3348534,
-                address: Ipv4Addr::from_str("192.33.4.12").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("d.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3512628,
-                address: Ipv4Addr::from_str("199.7.91.13").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("e.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3512739,
-                address: Ipv4Addr::from_str("192.203.230.10").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("f.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3515613,
-                address: Ipv4Addr::from_str("192.5.5.241").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("g.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3526933,
-                address: Ipv4Addr::from_str("192.112.36.4").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("h.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3513119,
-                address: Ipv4Addr::from_str("198.97.190.53").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("i.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3512248,
-                address: Ipv4Addr::from_str("192.36.148.17").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("j.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3574353,
-                address: Ipv4Addr::from_str("192.58.128.30").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("k.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3574353,
-                address: Ipv4Addr::from_str("193.0.14.129").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("l.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3591933,
-                address: Ipv4Addr::from_str("199.7.83.42").unwrap(),
-            },
-            DnsRecord::A {
-                name: DnsName::from("m.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3510902,
-                address: Ipv4Addr::from_str("202.12.27.33").unwrap(),
-            },
-            DnsRecord::AAAA {
-                name: DnsName::from("a.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3513818,
-                address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
-            },
-            DnsRecord::AAAA {
-                name: DnsName::from("b.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 3556583,
-                address: Ipv6Addr::from_str("2001:500:200::b").unwrap(),
-            },
-        ],
-    };
+    );
+    expect.add_records(vec![
+        DnsRecord::A {
+            name: DnsName::from("b.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3173678,
+            address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("c.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3348534,
+            address: Ipv4Addr::from_str("192.33.4.12").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("d.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3512628,
+            address: Ipv4Addr::from_str("199.7.91.13").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("e.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3512739,
+            address: Ipv4Addr::from_str("192.203.230.10").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("f.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3515613,
+            address: Ipv4Addr::from_str("192.5.5.241").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("g.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3526933,
+            address: Ipv4Addr::from_str("192.112.36.4").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("h.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3513119,
+            address: Ipv4Addr::from_str("198.97.190.53").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("i.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3512248,
+            address: Ipv4Addr::from_str("192.36.148.17").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("j.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3574353,
+            address: Ipv4Addr::from_str("192.58.128.30").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("k.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3574353,
+            address: Ipv4Addr::from_str("193.0.14.129").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("l.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3591933,
+            address: Ipv4Addr::from_str("199.7.83.42").unwrap(),
+        },
+        DnsRecord::A {
+            name: DnsName::from("m.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3510902,
+            address: Ipv4Addr::from_str("202.12.27.33").unwrap(),
+        },
+        DnsRecord::AAAA {
+            name: DnsName::from("a.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3513818,
+            address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
+        },
+        DnsRecord::AAAA {
+            name: DnsName::from("b.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 3556583,
+            address: Ipv6Addr::from_str("2001:500:200::b").unwrap(),
+        },
+    ]);
 
     assert_eq!(expect, DnsPacket::parse(&bytes[..]).unwrap());
 }
 
 #[test]
 fn test_serialize() {
-    let packet = DnsPacket {
-        header: DnsHeader {
-            transaction_id: 0x244B,
-            flags: DnsHeaderFlags {
-                response: true,
-                recdesired: true,
-                recavail: true,
-                ..Default::default()
-            },
-            queries: 0x02,
-            responses: 0x02,
-            auth_rr: 0x00,
-            add_rr: 0x00,
+    let mut packet = DnsPacket::new();
+    packet.header.transaction_id = 0x244B;
+    packet.header.set_flags(DnsHeaderFlags {
+        response: true,
+        recdesired: true,
+        recavail: true,
+        ..Default::default()
+    });
+    packet.add_queries(vec![
+        DnsQuery::A {
+            name: DnsName::from("a.root-servers.net"),
+            class: DnsClass::IN,
         },
-        queries: vec![
-            DnsQuery::A {
-                name: DnsName::from("a.root-servers.net"),
-                class: DnsClass::IN,
-            },
-            DnsQuery::AAAA {
-                name: DnsName::from("a.root-servers.net"),
-                class: DnsClass::IN,
-            },
-        ],
-        responses: vec![
-            DnsRecord::A {
-                name: DnsName::from("a.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 0x162E,
-                address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
-            },
-            DnsRecord::AAAA {
-                name: DnsName::from("a.root-servers.net"),
-                class: DnsClass::IN,
-                ttl: 0x1234,
-                address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
-            },
-        ],
-        authorities: vec![],
-        additional_records: vec![],
-    };
+        DnsQuery::AAAA {
+            name: DnsName::from("a.root-servers.net"),
+            class: DnsClass::IN,
+        },
+    ]);
+    packet.add_responses(vec![
+        DnsRecord::A {
+            name: DnsName::from("a.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 0x162E,
+            address: Ipv4Addr::from_str("199.9.14.201").unwrap(),
+        },
+        DnsRecord::AAAA {
+            name: DnsName::from("a.root-servers.net"),
+            class: DnsClass::IN,
+            ttl: 0x1234,
+            address: Ipv6Addr::from_str("2001:503:ba3e::2:30").unwrap(),
+        },
+    ]);
 
     #[rustfmt::skip]
-        let expect: Vec<u8> = vec![
-            0x24, 0x4B, // Transaction ID
-            0x81, 0x80, // Flags
-            0x00, 0x02, // Queries count: 2
-            0x00, 0x02, // Responses count: 2
-            0x00, 0x00, // Authority RRs: 0
-            0x00, 0x00, // Additional RRs: 0
-            0x01, 0x61, // a
-            0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
-            0x03, 0x6e, 0x65, 0x74, // net
-            0x00,       // Null terminated
-            0x00, 0x01, // Record Type: A
-            0x00, 0x01, // Class: IN
-            0x01, 0x61, // a
-            0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
-            0x03, 0x6E, 0x65, 0x74, // net
-            0x00,       // Null terminated
-            0x00, 0x1C, // Record Type: AAAA
-            0x00, 0x01, // Class: IN
-            0x01, 0x61, // a
-            0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
-            0x03, 0x6e, 0x65, 0x74, // net
-            0x00,       // Null terminated
-            0x00, 0x01, // Record Type: A
-            0x00, 0x01, // Class: IN
-            0x00, 0x00, 0x16, 0x2E, // TTL: 0x162E
-            0xC7, 0x09, 0x0E, 0xC9, // Address: 199.9.14.201
-            0x01, 0x61, // a
-            0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
-            0x03, 0x6E, 0x65, 0x74, // net
-            0x00,       // Null terminated
-            0x00, 0x1C, // Record Type: AAAA
-            0x00, 0x01, // Class: IN
-            0x00, 0x00, 0x12, 0x34, // TTL: 0x1234
-            0x20, 0x01, 0x05, 0x03, 0xBA, 0x3E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x30 // Address: 2001:503:ba3e::2:30
-        ];
+    let expect: Vec<u8> = vec![
+        0x24, 0x4B, // Transaction ID
+        0x81, 0x80, // Flags
+        0x00, 0x02, // Queries count: 2
+        0x00, 0x02, // Responses count: 2
+        0x00, 0x00, // Authority RRs: 0
+        0x00, 0x00, // Additional RRs: 0
+        0x01, 0x61, // a
+        0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6e, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x01, // Record Type: A
+        0x00, 0x01, // Class: IN
+        0x01, 0x61, // a
+        0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6E, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x1C, // Record Type: AAAA
+        0x00, 0x01, // Class: IN
+        0x01, 0x61, // a
+        0x0C, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6e, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x01, // Record Type: A
+        0x00, 0x01, // Class: IN
+        0x00, 0x00, 0x16, 0x2E, // TTL: 0x162E
+        0x00, 0x04, // Data Length: 4
+        0xC7, 0x09, 0x0E, 0xC9, // Address: 199.9.14.201
+        0x01, 0x61, // a
+        0x0c, 0x72, 0x6F, 0x6F, 0x74, 0x2D, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x73, // root-servers
+        0x03, 0x6E, 0x65, 0x74, // net
+        0x00,       // Null terminated
+        0x00, 0x1C, // Record Type: AAAA
+        0x00, 0x01, // Class: IN
+        0x00, 0x00, 0x12, 0x34, // TTL: 0x1234
+        0x00, 0x10, // Data Length: 16
+        0x20, 0x01, 0x05, 0x03, 0xBA, 0x3E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x30 // Address: 2001:503:ba3e::2:30
+    ];
 
     assert_eq!(expect, packet.serialize().unwrap());
 }
