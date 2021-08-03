@@ -14,11 +14,10 @@ use nom::{
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DnsQuery {
-    A { name: DnsName, class: DnsClass },
-    NS { name: DnsName, class: DnsClass },
-    CNAME { name: DnsName, class: DnsClass },
-    AAAA { name: DnsName, class: DnsClass },
+pub struct DnsQuery {
+    pub name: DnsName,
+    pub record_type: DnsRecordType,
+    pub class: DnsClass,
 }
 
 impl DnsQuery {
@@ -32,12 +31,10 @@ impl DnsQuery {
                     context("Type", map_res(be_u16, DnsRecordType::try_from)),
                     context("Class", map_res(be_u16, DnsClass::try_from)),
                 )),
-                |(name, record_type, class)| match record_type {
-                    DnsRecordType::A => DnsQuery::A { name, class },
-                    DnsRecordType::NS => DnsQuery::NS { name, class },
-                    DnsRecordType::CNAME => DnsQuery::CNAME { name, class },
-                    DnsRecordType::AAAA => DnsQuery::AAAA { name, class },
-                    _ => unimplemented!(),
+                |(name, record_type, class)| DnsQuery {
+                    name,
+                    record_type,
+                    class,
                 },
             )(i)
         }
@@ -46,40 +43,11 @@ impl DnsQuery {
     pub fn serialize<'a, W: Write + 'a>(&'a self) -> impl SerializeFn<W> + 'a {
         use cf::{bytes::be_u16, combinator::slice, sequence::tuple};
 
-        match self {
-            DnsQuery::A {
-                ref name,
-                ref class,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::A as u16),
-                be_u16(*class as u16),
-            )),
-            DnsQuery::NS {
-                ref name,
-                ref class,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::NS as u16),
-                be_u16(*class as u16),
-            )),
-            DnsQuery::CNAME {
-                ref name,
-                ref class,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::CNAME as u16),
-                be_u16(*class as u16),
-            )),
-            DnsQuery::AAAA {
-                ref name,
-                ref class,
-            } => tuple((
-                slice(name.to_bytes().unwrap()),
-                be_u16(DnsRecordType::AAAA as u16),
-                be_u16(*class as u16),
-            )),
-        }
+        tuple((
+            slice(self.name.to_bytes().unwrap()),
+            be_u16(self.record_type as u16),
+            be_u16(self.class as u16),
+        ))
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {

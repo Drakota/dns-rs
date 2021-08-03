@@ -2,7 +2,7 @@ use super::{name::DnsName, DnsClass, DnsRecordType};
 use crate::types::{ParseInput, ParseResult};
 
 use cookie_factory::{self as cf, gen_simple, GenError, SerializeFn};
-use std::io::Write;
+use std::{io::Write, net::IpAddr};
 
 use nom::{
     bytes::complete::take,
@@ -192,5 +192,22 @@ impl DnsRecord {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, GenError> {
         gen_simple(self.serialize(), Vec::new())
+    }
+
+    pub fn get_name(&self) -> &DnsName {
+        match self {
+            DnsRecord::A { ref name, .. } => name,
+            DnsRecord::NS { ref name, .. } => name,
+            DnsRecord::CNAME { ref name, .. } => name,
+            DnsRecord::AAAA { ref name, .. } => name,
+        }
+    }
+
+    pub fn get_address(&self) -> Option<IpAddr> {
+        match self {
+            DnsRecord::A { ref address, .. } => Some(IpAddr::V4(*address)),
+            DnsRecord::AAAA { ref address, .. } => Some(IpAddr::V6(*address)),
+            _ => None,
+        }
     }
 }

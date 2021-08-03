@@ -17,7 +17,7 @@ fn forward_query(opts: &Opts, query: &DnsQuery) -> Result<DnsPacket> {
         Err(_e) => todo!(),
     };
 
-    socket.send_to(&bytes[..], (opts.proxy_address, opts.proxy_port))?;
+    socket.send_to(&bytes[..], (opts.forward_address, opts.forward_port))?;
 
     let mut buffer = [0; 512];
     let (size, _) = socket.recv_from(&mut buffer)?;
@@ -33,7 +33,7 @@ fn main() -> Result<()> {
     let socket = UdpSocket::bind(("0.0.0.0", opts.port))?;
     println!(
         "Server listening on port {} and proxing requests to {}",
-        opts.port, opts.proxy_address
+        opts.port, opts.forward_address
     );
 
     loop {

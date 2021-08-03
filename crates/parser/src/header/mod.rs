@@ -9,7 +9,7 @@ use std::io::Write;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsHeader {
     pub transaction_id: u16,
-    flags: DnsHeaderFlags,
+    pub flags: DnsHeaderFlags,
     pub queries: u16,
     pub responses: u16,
     pub auth_rr: u16,

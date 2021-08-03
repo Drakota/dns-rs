@@ -125,10 +125,6 @@ impl DnsPacket {
         gen_simple(bytes, Vec::new())
     }
 
-    pub fn header(&self) -> &DnsHeader {
-        &self.header
-    }
-
     // IMPROVEMENT: Could make a macro for this.
     pub fn queries(&self) -> &Vec<DnsQuery> {
         &self.queries

@@ -1,7 +1,7 @@
 use parser::{
     header::flags::*,
     packet::*,
-    resources::{name::*, query::*, record::*, DnsClass},
+    resources::{name::*, query::*, record::*, DnsClass, DnsRecordType},
 };
 
 use std::{
@@ -43,8 +43,9 @@ fn test_parse_ipv4_dns_query() {
         authenticated: false,
         ..Default::default()
     });
-    expect.add_query(DnsQuery::A {
+    expect.add_query(DnsQuery {
         name: DnsName::from("google.com"),
+        record_type: DnsRecordType::A,
         class: DnsClass::IN,
     });
 
@@ -85,8 +86,9 @@ pub fn test_parse_ipv6_dns_query() {
         authenticated: false,
         ..Default::default()
     });
-    expect.add_query(DnsQuery::AAAA {
+    expect.add_query(DnsQuery {
         name: DnsName::from("google.com"),
+        record_type: DnsRecordType::AAAA,
         class: DnsClass::IN,
     });
 
@@ -140,8 +142,9 @@ pub fn test_parse_ipv4_dns_response() {
         checkdisable: false,
         rcode: ReplyCode::NoError,
     });
-    expect.add_query(DnsQuery::A {
+    expect.add_query(DnsQuery {
         name: DnsName::from("google.com"),
+        record_type: DnsRecordType::A,
         class: DnsClass::IN,
     });
     expect.add_response(DnsRecord::A {
@@ -201,8 +204,9 @@ pub fn test_parse_ipv6_dns_response() {
         checkdisable: false,
         rcode: ReplyCode::NoError,
     });
-    expect.add_query(DnsQuery::AAAA {
+    expect.add_query(DnsQuery {
         name: DnsName::from("google.com"),
+        record_type: DnsRecordType::AAAA,
         class: DnsClass::IN,
     });
     expect.add_response(DnsRecord::AAAA {
@@ -255,8 +259,9 @@ pub fn test_parse_dns_response_with_cname() {
         recavail: true,
         ..Default::default()
     });
-    expect.add_query(DnsQuery::A {
+    expect.add_query(DnsQuery {
         name: DnsName::from("docs.sbonds.org"),
+        record_type: DnsRecordType::A,
         class: DnsClass::IN,
     });
     expect.add_responses(vec![
@@ -324,8 +329,9 @@ pub fn test_parse_dns_response_with_name_servers_and_additional_records() {
         recavail: true,
         ..Default::default()
     });
-    expect.add_query(DnsQuery::A {
+    expect.add_query(DnsQuery {
         name: DnsName::from("a.root-servers.net"),
+        record_type: DnsRecordType::A,
         class: DnsClass::IN,
     });
     expect.add_response(DnsRecord::A {
@@ -447,12 +453,14 @@ fn test_serialize() {
         ..Default::default()
     });
     packet.add_queries(vec![
-        DnsQuery::A {
+        DnsQuery {
             name: DnsName::from("a.root-servers.net"),
+            record_type: DnsRecordType::A,
             class: DnsClass::IN,
         },
-        DnsQuery::AAAA {
+        DnsQuery {
             name: DnsName::from("a.root-servers.net"),
+            record_type: DnsRecordType::AAAA,
             class: DnsClass::IN,
         },
     ]);
